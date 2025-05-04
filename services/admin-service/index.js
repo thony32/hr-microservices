@@ -1,5 +1,10 @@
 /**
  * @swagger
+ * tags:
+ *   - name: Employee
+ *   - name: Beneficiary
+ *   - name: Counselor
+ *
  * components:
  *   schemas:
  *     Employe:
@@ -11,11 +16,6 @@
  *         email:                  { type: string, format: email }
  *         numeroAssuranceSociale: { type: string }
  *         estAuthentifie:         { type: boolean }
- *     Beneficiaire:
- *       type: object
- *       properties:
- *         idBeneficiaire: { type: integer, readOnly: true }
- *         nom:            { type: string }
  *     ConseillerRH:
  *       type: object
  *       properties:
@@ -23,16 +23,15 @@
  *         nomConseiller: { type: string }
  */
 
-import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
-import cors from "cors";
-import express from "express";
-import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./swagger.js";
+import express from "express"
+import cors from "cors"
+import { PrismaClient } from "@prisma/client"
+import swaggerUi from "swagger-ui-express"
+import { swaggerSpec } from "./swagger.js"
 
-const prisma = new PrismaClient();
-const app = express();
-app.use(cors(), express.json());
+const prisma = new PrismaClient()
+const app = express()
+app.use(cors(), express.json())
 
 /**
  * @swagger
@@ -44,25 +43,22 @@ app.use(cors(), express.json());
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Employe'
+ *           schema: { $ref: '#/components/schemas/Employe' }
  *     responses:
  *       '201': { description: Employé créé }
  *       '409': { description: Email déjà utilisé }
  */
 app.post("/employees", async (req, res, next) => {
-	try {
-		const data = { ...req.body };
-		data.numeroEmploye = undefined;
-		const created = await prisma.employe.create({ data });
-		res.status(201).json(created);
-	} catch (err) {
-		if (err.code === "P2002") {
-			return res.status(409).json({ message: "Email déjà utilisé" });
-		}
-		next(err);
-	}
-});
+    try {
+        const data = { ...req.body }
+        delete data.numeroEmploye
+        const emp = await prisma.employe.create({ data })
+        res.status(201).json(emp)
+    } catch (e) {
+        if (e.code === "P2002") return res.status(409).json({ message: "Email déjà utilisé" })
+        next(e)
+    }
+})
 
 /**
  * @swagger
@@ -73,9 +69,7 @@ app.post("/employees", async (req, res, next) => {
  *     responses:
  *       '200': { description: OK }
  */
-app.get("/employees", async (_, res) =>
-	res.json(await prisma.employe.findMany()),
-);
+app.get("/employees", async (_, res) => res.json(await prisma.employe.findMany()))
 
 /**
  * @swagger
@@ -91,13 +85,7 @@ app.get("/employees", async (_, res) =>
  *     responses:
  *       '200': { description: OK }
  */
-app.get("/employees/:id", async (req, res) =>
-	res.json(
-		await prisma.employe.findUnique({
-			where: { numeroEmploye: +req.params.id },
-		}),
-	),
-);
+app.get("/employees/:id", async (r, s) => s.json(await prisma.employe.findUnique({ where: { numeroEmploye: +r.params.id } })))
 
 /**
  * @swagger
@@ -115,17 +103,9 @@ app.get("/employees/:id", async (req, res) =>
  *       content:
  *         application/json:
  *           schema: { $ref: '#/components/schemas/Employe' }
- *     responses:
- *       '200': { description: OK }
+ *     responses: { '200': { description: OK } }
  */
-app.put("/employees/:id", async (req, res) =>
-	res.json(
-		await prisma.employe.update({
-			where: { numeroEmploye: +req.params.id },
-			data: req.body,
-		}),
-	),
-);
+app.put("/employees/:id", async (r, s) => s.json(await prisma.employe.update({ where: { numeroEmploye: +r.params.id }, data: r.body })))
 
 /**
  * @swagger
@@ -138,58 +118,26 @@ app.put("/employees/:id", async (req, res) =>
  *         name: id
  *         required: true
  *         schema: { type: integer }
- *     responses:
- *       '200': { description: Supprimé }
+ *     responses: { '200': { description: Supprimé } }
  */
-app.delete("/employees/:id", async (req, res) =>
-	res.json(
-		await prisma.employe.delete({ where: { numeroEmploye: +req.params.id } }),
-	),
-);
+app.delete("/employees/:id", async (r, s) => s.json(await prisma.employe.delete({ where: { numeroEmploye: +r.params.id } })))
 
 /**
  * @swagger
- * /beneficiaries/{id}:
- *   get:
- *     tags: [Beneficiary]
- *     summary: Lire un bénéficiaire
+ * /employees/{id}/auth:
+ *   put:
+ *     tags: [Employee]
+ *     summary: Marquer un employé comme authentifié (appel interne)
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema: { type: integer }
- *     responses:
- *       '200': { description: OK }
+ *     responses: { '200': { description: OK } }
  */
-app.get("/beneficiaries/:id", async (req, res) =>
-	res.json(
-		await prisma.beneficiaire.findUnique({
-			where: { idBeneficiaire: +req.params.id },
-		}),
-	),
-);
-
-/**
- * @swagger
- * /beneficiaries/{id}:
- *   delete:
- *     tags: [Beneficiary]
- *     summary: Supprimer un bénéficiaire
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: integer }
- *     responses:
- *       '200': { description: Supprimé }
- */
-app.delete("/beneficiaries/:id", async (req, res) =>
-	res.json(
-		await prisma.beneficiaire.delete({
-			where: { idBeneficiaire: +req.params.id },
-		}),
-	),
-);
+app.put("/employees/:id/auth", async (r, s) =>
+    s.json(await prisma.employe.update({ where: { numeroEmploye: +r.params.id }, data: { estAuthentifie: true } })),
+)
 
 /**
  * @swagger
@@ -202,18 +150,13 @@ app.delete("/beneficiaries/:id", async (req, res) =>
  *       content:
  *         application/json:
  *           schema: { $ref: '#/components/schemas/ConseillerRH' }
- *     responses:
- *       '200': { description: OK }
+ *     responses: { '201': { description: Créé } }
  */
-app.post("/counselors", async (req, res) =>
-	res.json(await prisma.conseillerRH.create({ data: req.body })),
-);
+app.post("/counselors", async (r, s) => s.status(201).json(await prisma.conseillerRH.create({ data: r.body })))
 
-/* Swagger & erreur serveur */
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use((err, _req, res, _next) => {
-	console.error(err);
-	res.status(500).json({ message: "Erreur interne" });
-});
-
-app.listen(3005, () => console.log("👑 admin-service opérationnel sur 3005"));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+app.use((e, _req, res, _next) => {
+    console.error(e)
+    res.status(500).json({ msg: "Erreur interne" })
+})
+app.listen(3005, () => console.log("admin-service 3005"))
