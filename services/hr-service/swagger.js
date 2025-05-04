@@ -1,15 +1,10 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import swaggerJSDoc from "swagger-jsdoc";
+import { fileURLToPath } from "url"
+import path from "path"
+import swaggerJSDoc from "swagger-jsdoc"
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export const swaggerSpec = swaggerJSDoc({
-	definition: {
-		openapi: "3.0.0",
-		info: { title: "hr-service API", version: "1.0.0" },
-		servers: [{ url: "http://localhost:3001" }],
-	},
-	apis: [path.join(__dirname, "index.js")],
-});
+    definition: { openapi: "3.0.0", info: { title: "hr-service", version: "1.0.0" }, servers: [{ url: "http://localhost:3001" }] },
+    apis: [path.join(__dirname, "index.js")],
+})
